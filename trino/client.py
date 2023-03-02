@@ -137,6 +137,7 @@ class ClientSession(object):
         client_tags: List[str] = None,
         roles: Dict[str, str] = None,
         timezone: str = None,
+        role: str = None,
     ):
         self._user = user
         self._catalog = catalog
@@ -147,7 +148,7 @@ class ClientSession(object):
         self._transaction_id = transaction_id
         self._extra_credential = extra_credential
         self._client_tags = client_tags.copy() if client_tags is not None else list()
-        self._roles = self._format_roles(roles) if roles is not None else {}
+        self._roles = self._format_roles(role, roles)
         self._prepared_statements: Dict[str, str] = {}
         self._object_lock = threading.Lock()
         self._timezone = timezone or get_localzone_name()
@@ -238,7 +239,13 @@ class ClientSession(object):
         with self._object_lock:
             return self._timezone
 
-    def _format_roles(self, roles):
+    def _format_roles(self, role, roles):
+        if role and roles:
+            raise ValueError("specify either 'role' or 'roles' parameter, but not both")
+        elif role:
+            roles = {"system": role}
+        elif role is None and roles is None:
+            return {}
         formatted_roles = {}
         for catalog, role in roles.items():
             is_legacy_role_pattern = ROLE_PATTERN.match(role) is not None

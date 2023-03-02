@@ -1132,7 +1132,7 @@ def test_set_role(run_trino):
         assert_role_headers(cur, "system=ALL")
 
 
-def test_set_role_in_connection(run_trino):
+def test_set_roles_in_connection(run_trino):
     _, host, port = run_trino
 
     trino_connection = trino.dbapi.Connection(
@@ -1142,6 +1142,28 @@ def test_set_role_in_connection(run_trino):
     cur.execute('SHOW TABLES FROM information_schema')
     cur.fetchall()
     assert_role_headers(cur, "system=ALL")
+
+
+def test_set_role_in_connection(run_trino):
+    _, host, port = run_trino
+
+    trino_connection = trino.dbapi.Connection(
+        host=host, port=port, user="test", catalog="tpch", role="ALL"
+    )
+    cur = trino_connection.cursor()
+    cur.execute('SHOW TABLES FROM information_schema')
+    cur.fetchall()
+    assert_role_headers(cur, "system=ALL")
+
+
+def test_set_role_and_roles_in_connection(run_trino):
+    _, host, port = run_trino
+
+    with pytest.raises(ValueError) as e:
+        trino.dbapi.Connection(
+            host=host, port=port, user="test", catalog="tpch", roles={"system": "ALL"}, role="ALL"
+        )
+    assert "specify either 'role' or 'roles' parameter, but not both" == str(e.value)
 
 
 def assert_role_headers(cursor, expected_header):

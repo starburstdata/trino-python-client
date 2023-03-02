@@ -113,6 +113,7 @@ class Connection(object):
         legacy_primitive_types=False,
         roles=None,
         timezone=None,
+        role=None,
     ):
         self.host = host
         self.port = port
@@ -133,6 +134,7 @@ class Connection(object):
             client_tags=client_tags,
             roles=roles,
             timezone=timezone,
+            role=role,
         )
         # mypy cannot follow module import
         if http_session is None:
