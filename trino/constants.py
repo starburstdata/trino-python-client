@@ -42,6 +42,9 @@ HEADER_CLEAR_SESSION = "X-Trino-Clear-Session"
 HEADER_ROLE = "X-Trino-Role"
 HEADER_SET_ROLE = "X-Trino-Set-Role"
 
+HEADER_ORIGINAL_ROLE = "X-Trino-Original-Roles"
+HEADER_SET_ORIGINAL_ROLE = "X-Trino-Set-Original-Roles"
+
 HEADER_STARTED_TRANSACTION = "X-Trino-Started-Transaction-Id"
 HEADER_TRANSACTION = "X-Trino-Transaction-Id"
 

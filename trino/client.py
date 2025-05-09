@@ -137,6 +137,7 @@ class ClientSession(object):
         extra_credential: List[Tuple[str, str]] = None,
         client_tags: List[str] = None,
         roles: Union[Dict[str, str], str] = None,
+        original_roles: Union[Dict[str, str], str] = None,
         timezone: str = None,
     ):
         self._user = user
@@ -149,6 +150,7 @@ class ClientSession(object):
         self._extra_credential = extra_credential
         self._client_tags = client_tags.copy() if client_tags is not None else list()
         self._roles = self._format_roles(roles) if roles is not None else {}
+        self._original_roles = self._format_roles(original_roles) if roles is not None else {}
         self._prepared_statements: Dict[str, str] = {}
         self._object_lock = threading.Lock()
         self._timezone = timezone or get_localzone_name()
@@ -224,6 +226,16 @@ class ClientSession(object):
     def roles(self, roles):
         with self._object_lock:
             self._roles = roles
+
+    @property
+    def original_roles(self):
+        with self._object_lock:
+            return self._original_roles
+
+    @original_roles.setter
+    def original_roles(self, original_roles):
+        with self._object_lock:
+            self._original_roles = original_roles
 
     @property
     def prepared_statements(self):
@@ -466,6 +478,12 @@ class TrinoRequest(object):
                 "{}={}".format(catalog, urllib.parse.quote(str(role)))
                 for catalog, role in self._client_session.roles.items()
             )
+        if len(self._client_session.original_roles.values()):
+            headers[constants.HEADER_ORIGINAL_ROLE] = ",".join(
+                # ``name`` must not contain ``=``
+                "{}={}".format(catalog, urllib.parse.quote(str(role)))
+                for catalog, role in self._client_session.original_roles.items()
+            )
         if self._client_session.client_tags is not None and len(self._client_session.client_tags) > 0:
             headers[constants.HEADER_CLIENT_TAGS] = ",".join(self._client_session.client_tags)
 
@@ -648,6 +666,12 @@ class TrinoRequest(object):
                     http_response.headers, constants.HEADER_SET_ROLE
             ):
                 self._client_session.roles[key] = value
+
+        if constants.HEADER_SET_ORIGINAL_ROLE in http_response.headers:
+            for key, value in get_roles_values(
+                    http_response.headers, constants.HEADER_SET_ORIGINAL_ROLE
+            ):
+                self._client_session.original_roles[key] = value
 
         if constants.HEADER_ADDED_PREPARE in http_response.headers:
             for name, statement in get_prepared_statement_values(
